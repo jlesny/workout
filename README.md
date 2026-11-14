@@ -144,17 +144,23 @@ automatisch um. Eine Runde wird dabei nie auf zwei Seiten zerrissen.
 
 ## Aufs Handy holen
 
-Die App kann als Symbol auf dem Startbildschirm liegen und dort im Vollbild
-starten – **auch ohne Internet**, im Keller oder im Flugmodus. Dafür braucht
-sie einmalig eine Internetadresse; danach läuft sie wieder ganz für sich.
+Die App liegt unter
 
-Der Weg steht Schritt für Schritt in **`ANLEITUNG-Hochladen.md`**: Dateien
-kostenlos zu GitHub Pages hochladen, Adresse auf dem Handy öffnen, dort
-*App installieren* (Android) bzw. *Zum Home-Bildschirm* (iPhone). Kein
-Apple- oder Google-Entwicklerkonto, keine Store-Prüfung, keine Kosten.
+```
+https://jlesny.github.io/workout/
+```
 
-Ins Netz kommt dabei nur die **leere App**. Die Übungslisten lädst du erst
-danach ins Handy, und sie verlassen das Gerät nie.
+Dort im Handy-Browser öffnen und auf den Startbildschirm legen – *App
+installieren* (Android, Chrome) oder *Teilen → Zum Home-Bildschirm* (iPhone,
+Safari). Danach startet sie im Vollbild und läuft **auch ohne Internet**, im
+Keller oder im Flugmodus. Kein Apple- oder Google-Entwicklerkonto, keine
+Store-Prüfung, keine Kosten.
+
+Die Einzelheiten stehen in **`ANLEITUNG-Hochladen.md`** – auch, was zu tun
+ist, wenn sich an der App etwas ändert.
+
+Im Netz steht nur die **leere App**. Die Übungslisten lädst du erst danach ins
+Handy, und sie verlassen das Gerät nie.
 
 **Was auf dem Handy anders aussieht**
 
