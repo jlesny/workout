@@ -1,0 +1,1828 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1d4ed8" media="(prefers-color-scheme:light)">
+<meta name="theme-color" content="#171a20" media="(prefers-color-scheme:dark)">
+<title>Workout-Generator</title>
+
+<!-- Macht die Seite auf dem Handy zur App auf dem Startbildschirm.
+     Beim Doppelklick am PC fehlen diese Dateien - das stoert nicht. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Workout">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+
+:root{
+  color-scheme:light dark;
+  --bg:#f3f4f7;
+  --karte:#fff;
+  --text:#14161c;
+  --leise:#5b6472;
+  --linie:#e3e6ec;
+  --feld:#fff;
+  --akzent:#1d4ed8;
+  --akzent-hell:#eef2ff;
+  --akzent-text:#fff;
+  --burpee:#9a4a05;
+  --burpee-bg:#fff6ec;
+  --burpee-linie:#f1dbc1;
+  --ok:#15803d;
+  --warn-bg:#fff8e6;
+  --warn-text:#86590a;
+  --warn-linie:#f0dba8;
+  --fehler-bg:#fdecec;
+  --fehler-text:#a11818;
+  --fehler-linie:#f3c9c9;
+  --schatten:0 1px 2px rgba(16,20,30,.05), 0 6px 20px rgba(16,20,30,.06);
+  --rund:14px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0e1014;
+    --karte:#171a20;
+    --text:#e9ecf1;
+    --leise:#99a2b1;
+    --linie:#272c35;
+    --feld:#11141a;
+    --akzent:#6f9bff;
+    --akzent-hell:#1a2334;
+    --akzent-text:#0b1220;
+    --burpee:#f0a35c;
+    --burpee-bg:#231a11;
+    --burpee-linie:#3b2a1a;
+    --ok:#5fcf87;
+    --warn-bg:#272112;
+    --warn-text:#e6c278;
+    --warn-linie:#453a1f;
+    --fehler-bg:#2b1616;
+    --fehler-text:#ff9f9f;
+    --fehler-linie:#4a2626;
+    --schatten:0 1px 2px rgba(0,0,0,.45), 0 6px 20px rgba(0,0,0,.35);
+  }
+}
+
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font:400 16px/1.5 "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  padding:0 20px 80px;
+  /* iPhone: aus Statusleiste, Home-Leiste und abgerundeten Ecken heraushalten. */
+  padding-top:env(safe-area-inset-top);
+  padding-left:max(20px,env(safe-area-inset-left));
+  padding-right:max(20px,env(safe-area-inset-right));
+  padding-bottom:max(80px,env(safe-area-inset-bottom));
+}
+[hidden]{display:none!important}
+
+.huelle{max-width:860px;margin:0 auto}
+
+/* ---------- Kopf ---------- */
+header{padding:44px 0 26px}
+h1{
+  margin:0;
+  font-size:clamp(28px,4.4vw,40px);
+  font-weight:700;
+  letter-spacing:-.02em;
+}
+.untertitel{margin:8px 0 0;color:var(--leise);font-size:16px;max-width:60ch}
+
+/* ---------- Karten / Schritte ---------- */
+.karte{
+  background:var(--karte);
+  border:1px solid var(--linie);
+  border-radius:var(--rund);
+  box-shadow:var(--schatten);
+  padding:22px 24px 24px;
+  margin:0 0 20px;
+}
+.karte-kopf{display:flex;align-items:center;gap:12px;margin:0 0 4px}
+.nummer{
+  flex:none;
+  width:26px;height:26px;
+  border-radius:50%;
+  background:var(--akzent-hell);
+  color:var(--akzent);
+  font-size:14px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+h2{margin:0;font-size:19px;font-weight:650;letter-spacing:-.01em}
+.karte-hinweis{margin:2px 0 18px 38px;color:var(--leise);font-size:14.5px}
+
+/* ---------- Upload ---------- */
+.ablagen{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:640px){.ablagen{grid-template-columns:1fr}}
+
+.ablage{
+  border:1.5px dashed var(--linie);
+  border-radius:12px;
+  padding:16px;
+  background:var(--feld);
+  transition:border-color .15s,background .15s;
+}
+.ablage.drueber{border-color:var(--akzent);background:var(--akzent-hell)}
+.ablage.gefuellt{border-style:solid}
+.ablage h3{margin:0 0 2px;font-size:15px;font-weight:650}
+.ablage .zahl{font-size:13.5px;color:var(--leise);margin:0 0 12px}
+.ablage .zahl b{color:var(--ok);font-weight:650}
+
+.knopfzeile{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+.chips{
+  display:flex;flex-wrap:wrap;gap:5px;
+  margin:12px 0 0;
+  max-height:112px;overflow:auto;
+}
+.chip{
+  font-size:12.5px;
+  background:var(--akzent-hell);
+  color:var(--akzent);
+  border-radius:999px;
+  padding:3px 9px;
+  white-space:nowrap;
+}
+.ablage[data-art="burpee"] .chip{background:var(--burpee-bg);color:var(--burpee)}
+
+/* ---------- Knoepfe ---------- */
+button{font:inherit;cursor:pointer}
+.knopf{
+  border:1px solid var(--linie);
+  background:var(--karte);
+  color:var(--text);
+  border-radius:9px;
+  padding:7px 13px;
+  font-size:14px;font-weight:550;
+  transition:background .12s,border-color .12s;
+}
+@media (hover:hover){.knopf:hover{background:var(--akzent-hell);border-color:var(--akzent)}}
+.knopf:active{transform:translateY(1px)}
+.knopf.haupt{
+  background:var(--akzent);border-color:var(--akzent);color:var(--akzent-text);
+  padding:11px 22px;font-size:16px;font-weight:650;
+}
+@media (hover:hover){.knopf.haupt:hover{filter:brightness(1.08)}}
+.knopf.leise{border-color:transparent;color:var(--leise);padding:7px 9px}
+@media (hover:hover){.knopf.leise:hover{background:var(--akzent-hell);color:var(--akzent)}}
+.knopf:disabled{opacity:.45;cursor:not-allowed;transform:none;background:var(--karte);border-color:var(--linie);color:var(--text)}
+:focus-visible{outline:2.5px solid var(--akzent);outline-offset:2px}
+
+/* ---------- Einstellungen ---------- */
+.felder{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px}
+.feld label{display:block;font-size:13.5px;font-weight:600;margin:0 0 5px}
+.feld .wink{display:block;font-weight:400;color:var(--leise);font-size:12.5px;margin-top:3px}
+input[type=number]{
+  font:inherit;width:100%;
+  padding:9px 11px;
+  border:1px solid var(--linie);border-radius:9px;
+  background:var(--feld);color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+input[type=number]:focus{outline:none;border-color:var(--akzent);box-shadow:0 0 0 3px var(--akzent-hell)}
+
+.schalter{display:flex;align-items:center;gap:9px;font-size:14.5px;cursor:pointer;user-select:none;padding:4px 0}
+.schalter input{appearance:none;margin:0;flex:none;width:40px;height:23px;border-radius:999px;background:var(--linie);position:relative;cursor:pointer;transition:background .15s}
+.schalter input::after{content:"";position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.schalter input:checked{background:var(--akzent)}
+.schalter input:checked::after{transform:translateX(17px)}
+.schalter-reihe{display:flex;flex-wrap:wrap;gap:8px 28px;margin-top:18px}
+
+.wuerfel-zeile{margin-top:22px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+
+/* ---------- Meldungen ---------- */
+.meldung{
+  border-radius:10px;padding:11px 14px;font-size:14px;
+  margin:14px 0 0;border:1px solid transparent;
+}
+.meldung.warn{background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-linie)}
+.meldung.fehler{background:var(--fehler-bg);color:var(--fehler-text);border-color:var(--fehler-linie)}
+.meldung p{margin:0}
+.meldung p + p{margin-top:5px}
+#speicher-warnung{margin:0 0 20px}
+
+/* ---------- Plan ---------- */
+#plan-karte{padding-bottom:12px}
+.zusammenfassung{
+  display:flex;flex-wrap:wrap;gap:6px 18px;
+  margin:0 0 18px 38px;
+  color:var(--leise);font-size:14.5px;
+}
+.zusammenfassung b{color:var(--text);font-weight:650;font-variant-numeric:tabular-nums}
+
+.bloecke{list-style:none;margin:0;padding:0}
+.block{
+  display:grid;
+  grid-template-columns:76px 72px 1fr auto;
+  align-items:center;
+  gap:0 10px;
+  padding:11px 10px 11px 12px;
+  border-radius:10px;
+  border:1px solid transparent;
+}
+.block + .block{margin-top:3px}
+.block .runde{
+  font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--leise);
+}
+.block .wdh{
+  text-align:right;
+  font-size:19px;font-weight:700;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.01em;
+}
+.block .wdh span{font-size:13px;font-weight:500;color:var(--leise);margin-left:3px}
+.block .name{font-size:16.5px;font-weight:550;padding-left:6px;overflow-wrap:anywhere}
+.block.uebung{background:var(--akzent-hell)}
+.block.uebung .wdh{color:var(--akzent)}
+.block.burpee{background:var(--burpee-bg);border-color:var(--burpee-linie)}
+.block.burpee .wdh{color:var(--burpee)}
+.block.burpee .name{color:var(--burpee)}
+.neu-wuerfeln{
+  border:none;background:transparent;color:var(--leise);
+  font-size:16px;line-height:1;padding:7px 8px;border-radius:8px;
+  opacity:.5;transition:opacity .12s,background .12s;
+}
+@media (hover:hover){
+  .block:hover .neu-wuerfeln{opacity:1}
+  .neu-wuerfeln:hover{background:rgba(125,135,155,.18)}
+}
+@media (max-width:560px){
+  /* Auf einem Handy zaehlt jeder Millimeter Breite: schmalere Karten und
+     keine Einrueckung unter der Schrittnummer. */
+  .karte{padding:18px 16px 20px}
+  .karte-hinweis,.zusammenfassung,#leer-hinweis{margin-left:0}
+
+  /* Uebungszeilen zweizeilig: oben Runde, Wiederholungen und das
+     Wuerfel-Zeichen, darunter der Name ueber die ganze Breite. Nur so
+     bleibt "Einbeinige Kniebeuge rechts" auch auf schmalen Handys
+     einzeilig - und darauf kommt es bei Seitenpaaren an. */
+  .block{
+    grid-template-columns:auto 1fr auto;
+    grid-template-areas:"runde wdh wuerfeln" "name name name";
+    gap:0 10px;
+    padding:5px 6px 9px 12px;
+  }
+  .block .runde{grid-area:runde;align-self:center}
+  .block .wdh{grid-area:wdh;text-align:left;font-size:19px;align-self:center}
+  .block .name{grid-area:name;padding-left:0;font-size:16px}
+  .block .neu-wuerfeln{grid-area:wuerfeln;justify-self:end;align-self:center}
+
+  /* Burpee-Zeilen tragen keine Rundennummer - eine Zeile genuegt. */
+  .block.burpee{
+    grid-template-columns:auto 1fr auto;
+    grid-template-areas:"wdh name wuerfeln";
+    padding:5px 6px 5px 20px;
+  }
+  .block.burpee .runde{display:none}
+  .block.burpee .name{font-size:15px}
+
+  header{padding:22px 0 20px}
+  .plan-knoepfe{flex-direction:column;align-items:stretch}
+  .knopf.haupt{width:100%}
+}
+
+/* Geraete ohne Maus: Flaechen gross genug fuer den Finger - und das
+   Wuerfel-Zeichen dauerhaft sichtbar, weil es kein Hover gibt. */
+@media (hover:none){
+  .neu-wuerfeln{opacity:1;min-width:44px;min-height:44px}
+  .knopf{min-height:44px}
+  .knopf.leise{min-height:44px;padding:7px 12px}
+  /* Die Beschriftung schaltet mit - also muss sie selbst gross genug sein. */
+  .schalter{min-height:44px}
+  input[type=number]{padding-top:11px;padding-bottom:11px}
+}
+
+.plan-knoepfe{
+  display:flex;flex-wrap:wrap;gap:10px;
+  margin:22px 0 10px;padding-top:18px;
+  border-top:1px solid var(--linie);
+}
+
+#leer-hinweis{color:var(--leise);font-size:15px;margin:0 0 6px 38px}
+
+footer{color:var(--leise);font-size:13px;text-align:center;padding:10px 0 0}
+
+/* ---------- Druck ---------- */
+@media print{
+  body{background:#fff;color:#000;padding:0;font-size:12pt}
+  header,footer,#schritt1,#schritt2,.plan-knoepfe,.neu-wuerfeln,#speicher-warnung,#plan-meldung{display:none!important}
+  .karte{border:none;box-shadow:none;padding:0;margin:0}
+  .nummer{display:none}
+  .karte-kopf{margin-bottom:10px}
+  h2{font-size:20pt}
+  .zusammenfassung{margin-left:0;color:#444}
+  .block{border:1px solid #ddd!important;background:#fff!important;page-break-inside:avoid;padding:8px 10px}
+  .block .wdh,.block .name{color:#000!important}
+  .block.burpee{background:#f6f6f6!important}
+  .block.burpee .name,.block.burpee .wdh{color:#333!important}
+}
+</style>
+</head>
+<body>
+<div class="huelle">
+
+<header>
+  <h1>Workout-Generator</h1>
+  <p class="untertitel">Lade deine Übungslisten hoch, sag wie viele Runden und
+  Wiederholungen du willst &ndash; der Plan wird gewürfelt.</p>
+</header>
+
+<div id="speicher-warnung" class="meldung fehler" hidden>
+  <p><b>Dieser Browser speichert hier nichts.</b> Die App funktioniert, aber
+  deine Listen und Einstellungen sind beim nächsten Öffnen wieder weg.</p>
+</div>
+
+<!-- ============ Schritt 1: Listen ============ -->
+<section class="karte" id="schritt1">
+  <div class="karte-kopf"><span class="nummer">1</span><h2>Listen laden</h2></div>
+  <p class="karte-hinweis">Je eine Spalte mit Namen genügt &ndash; als
+  <b>.xlsx</b>, <b>.csv</b> oder <b>.txt</b>. Kopfzeile und Nummerierung
+  dürfen drin sein. Die Listen bleiben gespeichert, du lädst sie nur einmal.</p>
+
+  <div class="ablagen">
+    <div class="ablage" id="ablage-uebung" data-art="uebung">
+      <h3>Übungen</h3>
+      <p class="zahl" id="zahl-uebung">Noch keine Liste geladen</p>
+      <div class="knopfzeile">
+        <button class="knopf" data-waehlen="uebung">Datei wählen</button>
+        <button class="knopf leise" data-beispiel="uebung">Beispiel laden</button>
+        <button class="knopf leise" data-leeren="uebung" hidden>Entfernen</button>
+      </div>
+      <input type="file" id="datei-uebung" accept=".csv,.txt,.xlsx,.tsv,text/csv,text/plain" hidden>
+      <div class="chips" id="chips-uebung"></div>
+    </div>
+
+    <div class="ablage" id="ablage-burpee" data-art="burpee">
+      <h3>Burpee-Varianten</h3>
+      <p class="zahl" id="zahl-burpee">Noch keine Liste geladen</p>
+      <div class="knopfzeile">
+        <button class="knopf" data-waehlen="burpee">Datei wählen</button>
+        <button class="knopf leise" data-beispiel="burpee">Beispiel laden</button>
+        <button class="knopf leise" data-leeren="burpee" hidden>Entfernen</button>
+      </div>
+      <input type="file" id="datei-burpee" accept=".csv,.txt,.xlsx,.tsv,text/csv,text/plain" hidden>
+      <div class="chips" id="chips-burpee"></div>
+    </div>
+  </div>
+
+  <div id="datei-meldung"></div>
+</section>
+
+<!-- ============ Schritt 2: Einstellungen ============ -->
+<section class="karte" id="schritt2">
+  <div class="karte-kopf"><span class="nummer">2</span><h2>Workout einstellen</h2></div>
+  <p class="karte-hinweis">Pro Runde wird eine Übung gewürfelt, dazwischen eine
+  Burpee-Variante.</p>
+
+  <div class="felder">
+    <div class="feld">
+      <label for="e-runden">Runden</label>
+      <input type="number" id="e-runden" min="1" max="50" step="1" value="5">
+    </div>
+    <div class="feld">
+      <label for="e-wdh-uebung">Wiederholungen je Übung</label>
+      <input type="number" id="e-wdh-uebung" min="1" max="999" step="1" value="20">
+    </div>
+    <div class="feld">
+      <label for="e-wdh-burpee">Wiederholungen je Burpee</label>
+      <input type="number" id="e-wdh-burpee" min="1" max="999" step="1" value="10">
+    </div>
+  </div>
+
+  <div class="schalter-reihe">
+    <label class="schalter"><input type="checkbox" id="e-burpees" checked> Burpees dazwischen</label>
+    <label class="schalter"><input type="checkbox" id="e-keine-doppelt" checked> Keine Übung doppelt</label>
+  </div>
+
+  <div class="wuerfel-zeile">
+    <button class="knopf haupt" id="wuerfeln">Workout würfeln</button>
+  </div>
+
+  <div id="einstell-meldung"></div>
+</section>
+
+<!-- ============ Schritt 3: Plan ============ -->
+<section class="karte" id="plan-karte">
+  <div class="karte-kopf"><span class="nummer">3</span><h2>Dein Workout</h2></div>
+  <p id="leer-hinweis">Noch nichts gewürfelt.</p>
+  <div class="zusammenfassung" id="zusammenfassung" hidden></div>
+  <ol class="bloecke" id="bloecke"></ol>
+  <div id="plan-meldung"></div>
+  <div class="plan-knoepfe" id="plan-knoepfe" hidden>
+    <button class="knopf" id="neu-wuerfeln">Neu würfeln</button>
+    <button class="knopf" id="pdf">PDF herunterladen</button>
+    <button class="knopf" id="drucken">Drucken</button>
+  </div>
+</section>
+
+<footer>Läuft vollständig auf diesem Gerät. Keine Verbindung nach außen, nichts wird übertragen.</footer>
+
+</div>
+<script>
+"use strict";
+
+/* ==========================================================================
+   Workout-Generator - laeuft komplett ohne Internet und ohne Fremdcode.
+   Gliederung:
+     1. Hilfen und Zustand
+     2. Speichern im Browser
+     3. CSV lesen
+     4. Excel (.xlsx) lesen - ZIP auspacken und XML auswerten
+     5. Zeilen zu Namen machen
+     6. Wuerfeln
+     7. Plan anzeigen
+     8. PDF bauen
+     9. Oberflaeche
+   ========================================================================== */
+
+
+/* ===== 1. Hilfen und Zustand ============================================= */
+
+const $ = (w) => document.querySelector(w);
+
+/** Fehler mit einem Text, den man dem Nutzer zeigen kann. */
+class AppFehler extends Error {}
+
+const BEISPIEL = {
+  uebung: ["Kniebeuge", "Liegestütz", "Ausfallschritt links", "Ausfallschritt rechts",
+    "Klimmzug", "Dips", "Unterarmstütz (Plank)", "Crunches", "Beinheben liegend",
+    "Mountain Climber", "Hampelmann", "Hollow Hold", "Superman", "Russian Twist",
+    "Box Jump", "Wandsitzen", "Einbeinige Kniebeuge links", "Einbeinige Kniebeuge rechts",
+    "Hüftheben (Hip Thrust)", "Seitstütz links", "Seitstütz rechts",
+    "Kettlebell Swing", "Wadenheben", "Schulterdrücken", "Rudern vorgebeugt",
+    "Bizepscurl", "Trizepsdrücken", "Sprung-Kniebeuge", "Kreuzheben"],
+  burpee: ["Standard-Burpee", "Half Burpee (ohne Liegestütz)", "Burpee mit Liegestütz",
+    "Burpee mit Klimmzug", "Burpee mit Tuck Jump", "Burpee mit Weitsprung",
+    "Burpee mit Seitsprung", "Devil Press", "Burpee Box Jump",
+    "Burpee mit Mountain Climber", "Einbeiniger Burpee", "Burpee mit Sternsprung"]
+};
+
+const ART_NAME = { uebung: "Übungen", burpee: "Burpee-Varianten" };
+const MAX_EINTRAEGE = 2000;
+
+const zustand = {
+  listen: { uebung: [], burpee: [] },
+  einst: { runden: 5, wdhUebung: 20, wdhBurpee: 10, burpeesAn: true, keineDoppelt: true },
+  plan: null
+};
+
+
+/* ===== 2. Speichern im Browser =========================================== */
+
+const SCHLUESSEL = "workout-generator-v1";
+let speicherGeht = true;
+
+function speicherPruefen() {
+  try {
+    localStorage.setItem(SCHLUESSEL + "-test", "1");
+    localStorage.removeItem(SCHLUESSEL + "-test");
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function speichern() {
+  if (!speicherGeht) return;
+  try {
+    localStorage.setItem(SCHLUESSEL, JSON.stringify({
+      listen: zustand.listen,
+      einst: zustand.einst,
+      plan: zustand.plan
+    }));
+  } catch (e) {
+    speicherGeht = false;
+    $("#speicher-warnung").hidden = false;
+  }
+}
+
+function geladenesHolen() {
+  if (!speicherGeht) return;
+  let roh;
+  try {
+    roh = localStorage.getItem(SCHLUESSEL);
+  } catch (e) { return; }
+  if (!roh) return;
+  let d;
+  try {
+    d = JSON.parse(roh);
+  } catch (e) { return; }
+  if (!d || typeof d !== "object") return;
+
+  for (const art of ["uebung", "burpee"]) {
+    const liste = d.listen && d.listen[art];
+    if (Array.isArray(liste)) {
+      zustand.listen[art] = liste.filter((n) => typeof n === "string" && n.trim() !== "")
+        .slice(0, MAX_EINTRAEGE);
+    }
+  }
+  if (d.einst && typeof d.einst === "object") {
+    const e = d.einst;
+    if (Number.isFinite(e.runden)) zustand.einst.runden = begrenzen(e.runden, 1, 50);
+    if (Number.isFinite(e.wdhUebung)) zustand.einst.wdhUebung = begrenzen(e.wdhUebung, 1, 999);
+    if (Number.isFinite(e.wdhBurpee)) zustand.einst.wdhBurpee = begrenzen(e.wdhBurpee, 1, 999);
+    zustand.einst.burpeesAn = e.burpeesAn !== false;
+    zustand.einst.keineDoppelt = e.keineDoppelt !== false;
+  }
+  if (d.plan && Array.isArray(d.plan.bloecke) && d.plan.bloecke.length) {
+    zustand.plan = d.plan;
+  }
+}
+
+function begrenzen(zahl, min, max) {
+  return Math.min(max, Math.max(min, Math.round(zahl)));
+}
+
+/** Setzt eine Meldung in einen Behaelter. meldungen = [{art, text}] */
+function meldungZeigen(behaelter, meldungen) {
+  const ziel = typeof behaelter === "string" ? $(behaelter) : behaelter;
+  ziel.textContent = "";
+  if (!meldungen || !meldungen.length) return;
+  const art = meldungen.some((m) => m.art === "fehler") ? "fehler" : "warn";
+  const kasten = document.createElement("div");
+  kasten.className = "meldung " + art;
+  for (const m of meldungen) {
+    const p = document.createElement("p");
+    p.textContent = m.text;
+    kasten.appendChild(p);
+  }
+  ziel.appendChild(kasten);
+}
+
+
+/* ===== 3. CSV lesen ====================================================== */
+
+/**
+ * Bytes zu Text. Erst UTF-8 streng versuchen; schlaegt das fehl, ist es
+ * Windows-1252 - so speichert deutsches Excel CSV-Dateien.
+ */
+function textAusBytes(bytes) {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch (e) {
+    return new TextDecoder("windows-1252").decode(bytes);
+  }
+}
+
+function bomWeg(text) {
+  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
+
+/** Zaehlt ein Zeichen in einer Zeile, Anfuehrungszeichen ausgenommen. */
+function zaehlenAusserhalb(zeile, zeichen) {
+  let zahl = 0, inAnf = false;
+  for (let i = 0; i < zeile.length; i++) {
+    const c = zeile[i];
+    if (c === '"') inAnf = !inAnf;
+    else if (c === zeichen && !inAnf) zahl++;
+  }
+  return zahl;
+}
+
+/**
+ * Trennzeichen erraten. Semikolon, Tab und senkrechter Strich kommen in
+ * Uebungsnamen praktisch nie vor - die gelten sofort. Das Komma dagegen steckt
+ * oft mitten im Namen ("Burpee, einbeinig"), darum zaehlt es nur als Trenner,
+ * wenn es fast in jeder Zeile gleich oft auftaucht.
+ */
+function trennzeichenRaten(text) {
+  const zeilen = text.split(/\r?\n/).filter((z) => z.trim() !== "").slice(0, 25);
+  if (!zeilen.length) return ";";
+
+  let bestes = null, besteZahl = 0;
+  for (const z of [";", "\t", "|"]) {
+    const summe = zeilen.reduce((s, zeile) => s + zaehlenAusserhalb(zeile, z), 0);
+    if (summe > besteZahl) { besteZahl = summe; bestes = z; }
+  }
+  if (bestes) return bestes;
+
+  const kommas = zeilen.map((zeile) => zaehlenAusserhalb(zeile, ","));
+  const mitKomma = kommas.filter((k) => k > 0).length;
+  if (mitKomma >= Math.ceil(zeilen.length * 0.7)) {
+    const erstes = kommas[0];
+    if (erstes > 0 && kommas.every((k) => k === erstes)) return ",";
+  }
+  return ";";
+}
+
+/** CSV nach RFC 4180 zerlegen: Anfuehrungszeichen und Umbrueche in Feldern. */
+function csvZerlegen(text, trenner) {
+  const zeilen = [];
+  let zelle = "", zeile = [], inAnf = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inAnf) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { zelle += '"'; i++; }
+        else inAnf = false;
+      } else zelle += c;
+      continue;
+    }
+    if (c === '"' && zelle.trim() === "") { inAnf = true; zelle = ""; continue; }
+    if (c === trenner) { zeile.push(zelle); zelle = ""; continue; }
+    if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      zeile.push(zelle);
+      zeilen.push(zeile);
+      zelle = ""; zeile = [];
+      continue;
+    }
+    zelle += c;
+  }
+  zeile.push(zelle);
+  zeilen.push(zeile);
+  return zeilen;
+}
+
+/* ===== 4. Excel (.xlsx) lesen ============================================
+   Eine .xlsx ist eine ZIP-Datei mit XML darin. Auspacken kann der Browser
+   seit Jahren selbst (DecompressionStream), XML lesen auch (DOMParser).
+   Deshalb braucht es hier keine fremde Bibliothek.
+   ======================================================================== */
+
+const SIG_ENDE = 0x06054b50;   // Ende des Zentralverzeichnisses
+const SIG_MITTE = 0x02014b50;  // Eintrag im Zentralverzeichnis
+const SIG_LOKAL = 0x04034b50;  // Kopf vor den eigentlichen Daten
+
+/** Liest das Inhaltsverzeichnis der ZIP-Datei. */
+function zipVerzeichnis(puffer) {
+  const sicht = new DataView(puffer);
+  const bytes = new Uint8Array(puffer);
+  if (bytes.length < 22) throw new AppFehler("Die Datei ist leer oder beschädigt.");
+
+  let ende = -1;
+  const frueheste = Math.max(0, bytes.length - 66000);
+  for (let i = bytes.length - 22; i >= frueheste; i--) {
+    if (sicht.getUint32(i, true) === SIG_ENDE) { ende = i; break; }
+  }
+  if (ende < 0) throw new AppFehler("Die Datei lässt sich nicht öffnen - sie ist beschädigt oder keine echte Excel-Datei.");
+
+  const anzahl = sicht.getUint16(ende + 10, true);
+  let pos = sicht.getUint32(ende + 16, true);
+  if (anzahl === 0xffff || pos === 0xffffffff) {
+    throw new AppFehler("Diese Excel-Datei benutzt das ZIP64-Format. Bitte in Excel als CSV speichern.");
+  }
+
+  const eintraege = [];
+  for (let i = 0; i < anzahl; i++) {
+    if (pos + 46 > bytes.length || sicht.getUint32(pos, true) !== SIG_MITTE) break;
+    const flags = sicht.getUint16(pos + 8, true);
+    const methode = sicht.getUint16(pos + 10, true);
+    const groesse = sicht.getUint32(pos + 20, true);
+    const nameLaenge = sicht.getUint16(pos + 28, true);
+    const extraLaenge = sicht.getUint16(pos + 30, true);
+    const kommentarLaenge = sicht.getUint16(pos + 32, true);
+    const lokal = sicht.getUint32(pos + 42, true);
+    const name = new TextDecoder(flags & 0x800 ? "utf-8" : "windows-1252")
+      .decode(bytes.subarray(pos + 46, pos + 46 + nameLaenge));
+    if (flags & 1) throw new AppFehler("Die Excel-Datei ist mit einem Passwort geschützt.");
+    eintraege.push({ name, methode, groesse, lokal });
+    pos += 46 + nameLaenge + extraLaenge + kommentarLaenge;
+  }
+  if (!eintraege.length) throw new AppFehler("In der Datei steckt keine lesbare Tabelle.");
+  return eintraege;
+}
+
+/** Packt einen einzelnen Eintrag aus. */
+async function zipEintragLesen(puffer, eintrag) {
+  const sicht = new DataView(puffer);
+  const bytes = new Uint8Array(puffer);
+  const lo = eintrag.lokal;
+  if (lo + 30 > bytes.length || sicht.getUint32(lo, true) !== SIG_LOKAL) {
+    throw new AppFehler("Die Excel-Datei ist beschädigt.");
+  }
+  const nameLaenge = sicht.getUint16(lo + 26, true);
+  const extraLaenge = sicht.getUint16(lo + 28, true);
+  const start = lo + 30 + nameLaenge + extraLaenge;
+  const daten = bytes.subarray(start, start + eintrag.groesse);
+
+  if (eintrag.methode === 0) return daten;                    // ungepackt
+  if (eintrag.methode !== 8) throw new AppFehler("Die Excel-Datei benutzt eine unbekannte Packmethode.");
+  if (typeof DecompressionStream === "undefined") {
+    throw new AppFehler("Dieser Browser kann keine Excel-Dateien auspacken. Bitte die Liste als CSV speichern - oder einen neueren Browser nehmen.");
+  }
+  const strom = new Blob([daten]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  return new Uint8Array(await new Response(strom).arrayBuffer());
+}
+
+function xmlLesen(bytes) {
+  const text = new TextDecoder("utf-8").decode(bytes);
+  const doku = new DOMParser().parseFromString(text, "application/xml");
+  if (doku.getElementsByTagName("parsererror").length) {
+    throw new AppFehler("Die Excel-Datei ist beschädigt.");
+  }
+  return doku;
+}
+
+/** Elemente nach Namen suchen, egal welcher Namensraum davorsteht. */
+function teile(knoten, name) {
+  return Array.from(knoten.getElementsByTagNameNS("*", name));
+}
+
+/** "B7" -> Spaltennummer 1 (0-basiert). */
+function spalteAusBezug(bezug) {
+  let n = 0;
+  for (let i = 0; i < bezug.length; i++) {
+    const c = bezug.charCodeAt(i);
+    if (c < 65 || c > 90) break;
+    n = n * 26 + (c - 64);
+  }
+  return n > 0 ? n - 1 : 0;
+}
+
+async function xlsxZeilen(puffer) {
+  const eintraege = zipVerzeichnis(puffer);
+  const finde = (pfad) => eintraege.find((e) => e.name.toLowerCase() === pfad);
+
+  // Gemeinsame Zeichenketten - dort stehen in Excel fast alle Texte.
+  let texte = [];
+  const sst = finde("xl/sharedstrings.xml");
+  if (sst) {
+    const doku = xmlLesen(await zipEintragLesen(puffer, sst));
+    texte = teile(doku, "si").map((si) => {
+      // Rich-Text besteht aus mehreren <t>; Lautschrift (<rPh>) gehoert nicht dazu.
+      const lautschrift = new Set(teile(si, "rPh").flatMap((r) => teile(r, "t")));
+      return teile(si, "t").filter((t) => !lautschrift.has(t))
+        .map((t) => t.textContent).join("");
+    });
+  }
+
+  // Welches Blatt ist das erste? Ueber workbook.xml und seine Bezuege.
+  let blatt = null;
+  const mappe = finde("xl/workbook.xml");
+  const bezuege = finde("xl/_rels/workbook.xml.rels");
+  if (mappe && bezuege) {
+    try {
+      const mappeDoku = xmlLesen(await zipEintragLesen(puffer, mappe));
+      const ersteSeite = teile(mappeDoku, "sheet")[0];
+      const id = ersteSeite && (ersteSeite.getAttribute("r:id") ||
+        ersteSeite.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id"));
+      if (id) {
+        const relDoku = xmlLesen(await zipEintragLesen(puffer, bezuege));
+        const rel = teile(relDoku, "Relationship").find((r) => r.getAttribute("Id") === id);
+        const ziel = rel && rel.getAttribute("Target");
+        if (ziel) {
+          const pfad = ("xl/" + ziel.replace(/^\/?(xl\/)?/, "")).toLowerCase();
+          blatt = finde(pfad);
+        }
+      }
+    } catch (e) { /* unten gibt es einen Ersatzweg */ }
+  }
+  if (!blatt) {
+    blatt = eintraege.filter((e) => /^xl\/worksheets\/[^/]+\.xml$/i.test(e.name))
+      .sort((a, b) => a.name.localeCompare(b.name, "en"))[0];
+  }
+  if (!blatt) throw new AppFehler("In der Excel-Datei ist kein Tabellenblatt zu finden.");
+
+  const blattDoku = xmlLesen(await zipEintragLesen(puffer, blatt));
+  const zeilen = [];
+  for (const zeile of teile(blattDoku, "row")) {
+    const zellen = [];
+    for (const z of teile(zeile, "c")) {
+      const spalte = spalteAusBezug(z.getAttribute("r") || "");
+      const typ = z.getAttribute("t");
+      let wert = "";
+      if (typ === "s") {
+        const v = teile(z, "v")[0];
+        if (v) wert = texte[Number(v.textContent)] || "";
+      } else if (typ === "inlineStr") {
+        wert = teile(z, "t").map((t) => t.textContent).join("");
+      } else if (typ === "e") {
+        wert = "";                                   // Fehlerzelle wie #NV
+      } else {
+        const v = teile(z, "v")[0];
+        if (v) wert = v.textContent || "";
+      }
+      zellen[spalte] = wert;
+    }
+    if (zellen.length) zeilen.push(Array.from(zellen, (c) => c == null ? "" : c));
+    if (zeilen.length > MAX_EINTRAEGE + 50) break;
+  }
+  return zeilen;
+}
+
+/* ===== 5. Zeilen zu Namen machen ========================================= */
+
+/** Woerter, die eine Kopfzeile verraten. "Burpee" fehlt hier bewusst -
+ *  das ist ein echter Uebungsname und darf nicht verschluckt werden. */
+const KOPF_WOERTER = new Set(["nr", "nr.", "no", "no.", "nummer", "#", "pos", "pos.",
+  "übung", "übungen", "uebung", "uebungen", "name", "namen", "bezeichnung",
+  "exercise", "exercises", "variante", "varianten", "burpee-variante",
+  "burpee-varianten", "burpeevariante", "burpee variante", "burpee varianten",
+  "titel", "kategorie", "muskelgruppe", "gerät", "geraet", "notiz", "bemerkung",
+  "wiederholungen", "wdh", "wdh.", "anmerkung", "beschreibung", "typ", "art"]);
+
+function istKopfzeile(zellen) {
+  const gefuellt = zellen.filter((c) => c !== "");
+  if (!gefuellt.length) return false;
+  return gefuellt.every((c) => KOPF_WOERTER.has(c.toLowerCase()));
+}
+
+/** Erste Zelle, die ein Name sein kann - reine Nummern werden uebersprungen. */
+function nameAusZeile(zellen) {
+  for (const c of zellen) {
+    if (c === "") continue;
+    if (/^\d+[.)]?$/.test(c)) continue;
+    return c;
+  }
+  return "";
+}
+
+/**
+ * Macht aus den Zeilen einer Datei eine saubere Namensliste.
+ * Gibt auch Hinweise zurueck, damit die App erklaeren kann, was sie getan hat.
+ */
+function namenAusZeilen(zeilen) {
+  const hinweise = [];
+  let reihen = zeilen
+    .map((z) => z.map((c) => String(c == null ? "" : c).replace(/\s+/g, " ").trim()))
+    .filter((z) => z.some((c) => c !== ""));
+
+  if (!reihen.length) return { namen: [], hinweise: [] };
+
+  if (reihen.length > 1 && istKopfzeile(reihen[0])) reihen = reihen.slice(1);
+
+  const namen = [];
+  const gesehen = new Set();
+  let doppelt = 0, zuLang = 0;
+
+  for (const reihe of reihen) {
+    let name = nameAusZeile(reihe);
+    if (name === "") continue;
+    if (name.length > 90) { name = name.slice(0, 90).trim(); zuLang++; }
+    const schluessel = name.toLowerCase();
+    if (gesehen.has(schluessel)) { doppelt++; continue; }
+    gesehen.add(schluessel);
+    namen.push(name);
+    if (namen.length >= MAX_EINTRAEGE) break;
+  }
+
+  if (doppelt > 0) {
+    hinweise.push(doppelt === 1
+      ? "Ein doppelter Eintrag wurde zusammengefasst."
+      : doppelt + " doppelte Einträge wurden zusammengefasst.");
+  }
+  if (zuLang > 0) hinweise.push("Sehr lange Namen wurden gekürzt.");
+  return { namen, hinweise };
+}
+
+
+/** Datei einlesen - erkennt selbst, ob Excel oder Text. */
+async function listeAusDatei(datei) {
+  if (datei.size === 0) throw new AppFehler("Die Datei ist leer.");
+  if (datei.size > 8 * 1024 * 1024) {
+    throw new AppFehler("Die Datei ist größer als 8 MB. Für eine Übungsliste sollte das nicht nötig sein.");
+  }
+  const puffer = await datei.arrayBuffer();
+  const bytes = new Uint8Array(puffer);
+  const endung = (datei.name.match(/\.[^.]*$/) || [""])[0].toLowerCase();
+
+  // "PK" am Anfang heisst ZIP - und damit .xlsx
+  if (bytes[0] === 0x50 && bytes[1] === 0x4b) {
+    return namenAusZeilen(await xlsxZeilen(puffer));
+  }
+  if (bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) {
+    throw new AppFehler("Das ist eine PDF-Datei. Die App braucht eine Tabelle oder Textliste.");
+  }
+  if (bytes[0] === 0xd0 && bytes[1] === 0xcf || endung === ".xls") {
+    throw new AppFehler('Das ist das alte Excel-Format (.xls). Bitte in Excel "Speichern unter" wählen und .xlsx oder CSV nehmen.');
+  }
+  if (endung === ".ods" || endung === ".numbers") {
+    throw new AppFehler("Dieses Tabellenformat kann die App nicht lesen. Bitte als .xlsx oder CSV speichern.");
+  }
+
+  const text = bomWeg(textAusBytes(bytes));
+  if (text.indexOf("\u0000") !== -1) {
+    throw new AppFehler("Die Datei enthält keinen lesbaren Text.");
+  }
+  return namenAusZeilen(csvZerlegen(text, trennzeichenRaten(text)));
+}
+
+
+/* ===== 5b. Seitenpaare erkennen ==========================================
+   Übungen, die nur eine Seite trainieren, erkennt die App an der Seitenangabe
+   am Ende des Namens. Beide Seiten werden dann zu einer Einheit verbunden und
+   immer am Stueck gezogen - erst links, dann rechts.
+   ======================================================================== */
+
+/* Vor der Seitenangabe muss ein Leerzeichen oder ein Satzzeichen stehen.
+   Sonst wuerde aus "Bizepscurl" ein "Bizepscur" mit der Seite "l". */
+const SEITE_MUSTER =
+  /^(.+?)(?:\s*[,;:–—/-]+\s*|\s+)[([]?\s*(links|rechts|left|right|li|re|l|r)\s*[)\]]?\.?$/i;
+const LINKE_WOERTER = new Set(["links", "left", "li", "l"]);
+const RECHTE_WOERTER = new Set(["rechts", "right", "re", "r"]);
+
+/** "Ausfallschritt links" -> { grund: "Ausfallschritt", seite: "links" } */
+function seiteErkennen(name) {
+  const treffer = SEITE_MUSTER.exec(name);
+  if (!treffer) return null;
+  const wort = treffer[2].toLowerCase();
+  const seite = LINKE_WOERTER.has(wort) ? "links"
+    : RECHTE_WOERTER.has(wort) ? "rechts" : null;
+  if (!seite) return null;
+  const grund = treffer[1].replace(/[\s,;:/–—([-]+$/, "").trim();
+  return grund ? { grund: grund, seite: seite } : null;
+}
+
+/**
+ * Macht aus einer Namensliste Einheiten:
+ *   { art: "einzel", namen: ["Klimmzug"] }
+ *   { art: "paar",   namen: ["Ausfallschritt links", "Ausfallschritt rechts"] }
+ * Gibt ausserdem zurueck, welche Seiten keine Gegenseite in der Liste haben.
+ */
+function einheitenBauen(namen) {
+  const einheiten = [];
+  const offen = new Map();            // Grundname -> { links, rechts, platz }
+  const ohneGegenseite = [];
+
+  for (const name of namen) {
+    const erkannt = seiteErkennen(name);
+    if (!erkannt) { einheiten.push({ art: "einzel", namen: [name] }); continue; }
+
+    const schluessel = erkannt.grund.toLowerCase();
+    let eintrag = offen.get(schluessel);
+    if (!eintrag) {
+      eintrag = { links: null, rechts: null, platz: einheiten.length };
+      offen.set(schluessel, eintrag);
+      einheiten.push(null);           // Platz freihalten, Reihenfolge bleibt
+    }
+    if (eintrag[erkannt.seite] === null) eintrag[erkannt.seite] = name;
+    else einheiten.push({ art: "einzel", namen: [name] });   // dritte Schreibweise
+  }
+
+  for (const eintrag of offen.values()) {
+    if (eintrag.links && eintrag.rechts) {
+      einheiten[eintrag.platz] = { art: "paar", namen: [eintrag.links, eintrag.rechts] };
+    } else {
+      const allein = eintrag.links || eintrag.rechts;
+      einheiten[eintrag.platz] = { art: "einzel", namen: [allein] };
+      ohneGegenseite.push(allein);
+    }
+  }
+  return { einheiten: einheiten.filter(Boolean), ohneGegenseite: ohneGegenseite };
+}
+
+
+/* ===== 6. Wuerfeln ======================================================= */
+
+/** Gleichmaessig verteilte Zufallszahl 0 .. max-1, ohne Verzerrung. */
+function zufallsZahl(max) {
+  if (max <= 1) return 0;
+  const grenze = Math.floor(0x100000000 / max) * max;
+  const feld = new Uint32Array(1);
+  let x;
+  do {
+    crypto.getRandomValues(feld);
+    x = feld[0];
+  } while (x >= grenze);
+  return x % max;
+}
+
+function mischen(liste) {
+  const a = liste.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = zufallsZahl(i + 1);
+    const h = a[i]; a[i] = a[j]; a[j] = h;
+  }
+  return a;
+}
+
+let paarZaehler = 0;
+
+/**
+ * Zieht Einheiten, bis "plaetze" Runden gefuellt sind.
+ * Ohne Zuruecklegen: der Topf wird gemischt und abgearbeitet. Erst wenn er leer
+ * ist, wird neu gemischt - und dabei verhindert, dass dieselbe Einheit zweimal
+ * direkt hintereinander kommt.
+ * Ein Seitenpaar belegt zwei Runden. Bleibt nur noch eine Runde frei, wird
+ * bevorzugt eine Einzeluebung gezogen, damit keine Seite allein steht.
+ * Liefert [{ name, paar }] - "paar" verbindet die beiden Seiten einer Übung.
+ */
+function folgeZiehen(einheiten, plaetze, keineDoppelt) {
+  const folge = [];
+  if (!einheiten.length || plaetze < 1) return folge;
+  const einzelne = einheiten.filter((e) => e.art === "einzel");
+
+  let topf = [];
+  while (folge.length < plaetze) {
+    const frei = plaetze - folge.length;
+    let einheit;
+
+    if (keineDoppelt) {
+      if (!topf.length) {
+        topf = mischen(einheiten);
+        const letzter = folge.length ? folge[folge.length - 1].name : null;
+        if (topf.length > 1 && letzter !== null && topf[0].namen[0] === letzter) {
+          const h = topf[0]; topf[0] = topf[1]; topf[1] = h;
+        }
+      }
+      let platz = 0;
+      if (frei === 1 && topf[0].art === "paar") {
+        const ersatz = topf.findIndex((e) => e.art === "einzel");
+        if (ersatz >= 0) {
+          platz = ersatz;
+        } else if (einzelne.length) {
+          // Im Topf steckt keine Einzelübung mehr. Dann lieber eine aus der
+          // ganzen Liste wiederholen als ein Seitenpaar zu zerreissen.
+          folge.push({ name: einzelne[zufallsZahl(einzelne.length)].namen[0], paar: null });
+          continue;
+        }
+      }
+      einheit = topf.splice(platz, 1)[0];
+    } else {
+      einheit = frei === 1 && einzelne.length
+        ? einzelne[zufallsZahl(einzelne.length)]
+        : einheiten[zufallsZahl(einheiten.length)];
+    }
+
+    const paar = einheit.art === "paar" ? "p" + (++paarZaehler) : null;
+    for (const name of einheit.namen) folge.push({ name: name, paar: paar });
+  }
+  return folge;
+}
+
+/** Besteht eine Liste ausschliesslich aus Seitenpaaren? */
+function nurPaare(einheiten) {
+  return einheiten.length > 0 && einheiten.every((e) => e.art === "paar");
+}
+
+function planBauen() {
+  const e = zustand.einst;
+  const uebungEinheiten = einheitenBauen(zustand.listen.uebung).einheiten;
+  const burpeeEinheiten = einheitenBauen(zustand.listen.burpee).einheiten;
+
+  // Besteht eine Liste nur aus Seitenpaaren, braucht der Plan eine gerade
+  // Rundenzahl - sonst bliebe am Ende zwangslaeufig eine Seite allein.
+  let plaetze = e.runden;
+  if (plaetze % 2 === 1 &&
+      (nurPaare(uebungEinheiten) || (e.burpeesAn && nurPaare(burpeeEinheiten)))) {
+    plaetze += 1;
+  }
+
+  // Die Übungsfolge gibt die Rundenzahl vor - sie darf nie gekuerzt werden,
+  // sonst stuende die letzte Seite ohne ihre Gegenseite da.
+  const uebungen = folgeZiehen(uebungEinheiten, plaetze, e.keineDoppelt);
+  const anzahl = uebungen.length;
+  let burpees = e.burpeesAn ? folgeZiehen(burpeeEinheiten, anzahl, e.keineDoppelt) : [];
+  if (e.burpeesAn && burpees.length < anzahl) {
+    burpees = folgeZiehen(burpeeEinheiten, anzahl, false);
+  }
+
+  const bloecke = [];
+  for (let r = 0; r < anzahl; r++) {
+    bloecke.push({
+      typ: "uebung", runde: r + 1, name: uebungen[r].name,
+      paar: uebungen[r].paar, wdh: e.wdhUebung
+    });
+    if (e.burpeesAn) {
+      bloecke.push({
+        typ: "burpee", runde: r + 1, name: burpees[r].name,
+        paar: burpees[r].paar, wdh: e.wdhBurpee
+      });
+    }
+  }
+  return { bloecke, erstellt: new Date().toISOString(), einst: Object.assign({}, e) };
+}
+
+/** Der naechste Block gleicher Art vor bzw. hinter einem Platz. */
+function nachbarnGleicherArt(bloecke, index, typ) {
+  const gefunden = [];
+  for (const schritt of [-1, 1]) {
+    for (let i = index + schritt; i >= 0 && i < bloecke.length; i += schritt) {
+      if (bloecke[i].typ === typ) { gefunden.push(bloecke[i].name); break; }
+    }
+  }
+  return gefunden;
+}
+
+/**
+ * Tauscht einen einzelnen Block gegen etwas anderes aus seiner Liste.
+ * Gehoert der Block zu einem Seitenpaar, werden immer beide Seiten getauscht -
+ * sonst stuende eine Seite ohne ihre Gegenseite da.
+ */
+function blockNeuWuerfeln(index) {
+  const plan = zustand.plan;
+  const block = plan.bloecke[index];
+  const einheiten = einheitenBauen(zustand.listen[block.typ]).einheiten;
+  if (einheiten.length < 2) return false;
+
+  const partner = block.paar
+    ? plan.bloecke.findIndex((b, i) => i !== index && b.paar === block.paar)
+    : -1;
+
+  // Alles, was im Plan schon vorkommt, soll nicht noch einmal gezogen werden.
+  const imPlan = new Set(plan.bloecke.filter((b) => b.typ === block.typ).map((b) => b.name));
+  const unbenutzt = (einheit) => !einheit.namen.some((n) => imPlan.has(n));
+
+  if (partner >= 0) {
+    const ersterPlatz = Math.min(index, partner);
+    const zweiterPlatz = Math.max(index, partner);
+
+    const paare = einheiten.filter((e) => e.art === "paar" && unbenutzt(e));
+    if (paare.length) {
+      const neu = paare[zufallsZahl(paare.length)];
+      plan.bloecke[ersterPlatz].name = neu.namen[0];
+      plan.bloecke[zweiterPlatz].name = neu.namen[1];
+      return true;
+    }
+    // Kein anderes Paar frei - dann zwei verschiedene Einzeluebungen.
+    const frei = einheiten.filter((e) => e.art === "einzel" && unbenutzt(e));
+    if (frei.length >= 2) {
+      const gezogen = mischen(frei);
+      plan.bloecke[ersterPlatz].name = gezogen[0].namen[0];
+      plan.bloecke[zweiterPlatz].name = gezogen[1].namen[0];
+      plan.bloecke[ersterPlatz].paar = null;
+      plan.bloecke[zweiterPlatz].paar = null;
+      return true;
+    }
+    return false;
+  }
+
+  // Einzelblock: nur Einzeluebungen kommen in Frage, ein Paar passt hier nicht.
+  const einzelne = einheiten.filter((e) => e.art === "einzel").map((e) => e.namen[0]);
+  let moeglich = einzelne.filter((n) => !imPlan.has(n));
+
+  // Reicht die Liste dafuer nicht, wenigstens die direkten Nachbarn meiden -
+  // und zur Not den Vorgaenger, den man ja gerade gemacht hat.
+  if (!moeglich.length) {
+    const nachbarn = nachbarnGleicherArt(plan.bloecke, index, block.typ);
+    const uebrig = einzelne.filter((n) => n !== block.name);
+    moeglich = uebrig.filter((n) => !nachbarn.includes(n));
+    if (!moeglich.length) moeglich = uebrig.filter((n) => n !== nachbarn[0]);
+    if (!moeglich.length) moeglich = uebrig;
+  }
+  if (!moeglich.length) return false;
+
+  block.name = moeglich[zufallsZahl(moeglich.length)];
+  return true;
+}
+
+/* ===== 7. Plan anzeigen ================================================== */
+
+/** Die tatsaechliche Rundenzahl des Plans - ein Seitenpaar kann eine kosten. */
+function rundenImPlan(plan) {
+  return plan.bloecke.filter((b) => b.typ === "uebung").length;
+}
+
+function planHinweise(plan) {
+  const h = [];
+  const e = zustand.einst;
+  const runden = plan ? rundenImPlan(plan) : e.runden;
+
+  // Ist eine Runde dazugekommen, damit kein Seitenpaar zerrissen wird?
+  if (plan && runden > plan.einst.runden) {
+    h.push({
+      art: "warn",
+      text: "Der Plan hat " + runden + " statt " + plan.einst.runden +
+        " Runden - sonst wäre am Ende eine Seite ohne ihre Gegenseite geblieben."
+    });
+  }
+  if (!e.keineDoppelt) return h;
+
+  const u = zustand.listen.uebung.length;
+  if (u > 0 && u < runden) {
+    h.push({
+      art: "warn",
+      text: "Nur " + u + (u === 1 ? " Übung" : " Übungen") + " in der Liste bei " +
+        runden + " Runden - " + (runden - u === 1 ? "eine wiederholt" : "einige wiederholen") + " sich."
+    });
+  }
+  if (e.burpeesAn) {
+    const b = zustand.listen.burpee.length;
+    if (b > 0 && b < runden) {
+      h.push({
+        art: "warn",
+        text: "Nur " + b + (b === 1 ? " Burpee-Variante" : " Burpee-Varianten") + " bei " +
+          runden + " Runden - " + (runden - b === 1 ? "eine wiederholt" : "einige wiederholen") + " sich."
+      });
+    }
+  }
+  return h;
+}
+
+function zusammenfassungTexte(plan) {
+  const uebungen = plan.bloecke.filter((b) => b.typ === "uebung");
+  const burpees = plan.bloecke.filter((b) => b.typ === "burpee");
+  const summeU = uebungen.reduce((s, b) => s + b.wdh, 0);
+  const summeB = burpees.reduce((s, b) => s + b.wdh, 0);
+  const runden = uebungen.length;
+
+  const texte = [[runden, runden === 1 ? "Runde" : "Runden"],
+    [summeU, "Wiederholungen Übungen"]];
+  if (burpees.length) texte.push([summeB, "Burpees"]);
+  texte.push([summeU + summeB, "Wiederholungen gesamt"]);
+  return texte;
+}
+
+function planZeigen() {
+  const plan = zustand.plan;
+  const liste = $("#bloecke");
+  const fassung = $("#zusammenfassung");
+  liste.textContent = "";
+  fassung.textContent = "";
+
+  if (!plan) {
+    $("#leer-hinweis").hidden = false;
+    fassung.hidden = true;
+    $("#plan-knoepfe").hidden = true;
+    meldungZeigen("#plan-meldung", []);
+    return;
+  }
+
+  $("#leer-hinweis").hidden = true;
+  fassung.hidden = false;
+  $("#plan-knoepfe").hidden = false;
+
+  for (const [zahl, text] of zusammenfassungTexte(plan)) {
+    const span = document.createElement("span");
+    const b = document.createElement("b");
+    b.textContent = zahl;
+    span.append(b, " " + text);
+    fassung.appendChild(span);
+  }
+
+  plan.bloecke.forEach((block, i) => {
+    const li = document.createElement("li");
+    li.className = "block " + block.typ;
+
+    const runde = document.createElement("span");
+    runde.className = "runde";
+    if (block.typ === "uebung") runde.textContent = "Runde " + block.runde;
+
+    const wdh = document.createElement("span");
+    wdh.className = "wdh";
+    const mal = document.createElement("span");
+    mal.textContent = "×";
+    wdh.append(String(block.wdh), mal);
+
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = block.name;
+
+    const knopf = document.createElement("button");
+    knopf.className = "neu-wuerfeln";
+    knopf.type = "button";
+    knopf.textContent = "↻";
+    knopf.title = (block.typ === "uebung" ? "Diese Übung" : "Diese Burpee-Variante") + " neu würfeln";
+    knopf.setAttribute("aria-label", knopf.title);
+    knopf.addEventListener("click", () => {
+      if (blockNeuWuerfeln(i)) { speichern(); planZeigen(); }
+    });
+
+    li.append(runde, wdh, name, knopf);
+    liste.appendChild(li);
+  });
+
+  meldungZeigen("#plan-meldung", planHinweise(plan));
+}
+
+
+/* ===== 8. PDF bauen ======================================================
+   Ein Text-PDF ist ueberschaubar: Katalog, Seitenbaum, pro Seite ein
+   Inhalts-Strom, am Ende die Querverweistabelle. Als Schrift dient Helvetica -
+   eine der 14 Standardschriften, die jedes PDF-Programm schon hat. Darum ist
+   hier nichts einzubetten und nichts nachzuladen.
+   ======================================================================== */
+
+const PDF = { breite: 595.28, hoehe: 841.89, randL: 56, randR: 56, randO: 54, randU: 46 };
+
+/* Zeichen oberhalb von ASCII, die WinAnsi anders einsortiert als Unicode. */
+const WINANSI_SONDER = {
+  0x20ac: 0x80, 0x201a: 0x82, 0x0192: 0x83, 0x201e: 0x84, 0x2026: 0x85,
+  0x2020: 0x86, 0x2021: 0x87, 0x02c6: 0x88, 0x2030: 0x89, 0x0160: 0x8a,
+  0x2039: 0x8b, 0x0152: 0x8c, 0x017d: 0x8e, 0x2018: 0x91, 0x2019: 0x92,
+  0x201c: 0x93, 0x201d: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97,
+  0x02dc: 0x98, 0x2122: 0x99, 0x0161: 0x9a, 0x203a: 0x9b, 0x0153: 0x9c,
+  0x017e: 0x9e, 0x0178: 0x9f
+};
+
+/** Text zu WinAnsi-Bytes - so kommen Umlaute im PDF richtig an. */
+function winAnsiBytes(text) {
+  const bytes = [];
+  for (const zeichen of String(text)) {
+    const code = zeichen.codePointAt(0);
+    if (code === 0x0a) { bytes.push(0x0a); continue; }
+    if (code < 0x20) { bytes.push(0x20); continue; }
+    if (code <= 0xff) { bytes.push(code); continue; }
+    const ersatz = WINANSI_SONDER[code];
+    bytes.push(ersatz === undefined ? 0x3f : ersatz);
+  }
+  return Uint8Array.from(bytes);
+}
+
+/* Zeichenbreiten von Helvetica, ASCII 32-126, in Tausendstel der Schriftgroesse. */
+const BREIT_NORMAL = [
+  278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278,
+  556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556,
+  1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778,
+  667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556,
+  333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556,
+  556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584];
+const BREIT_FETT = [
+  278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278,
+  556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 333, 333, 584, 584, 584, 611,
+  975, 722, 722, 722, 722, 667, 611, 778, 722, 278, 556, 722, 611, 833, 722, 778,
+  667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584, 556,
+  333, 556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611,
+  611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584];
+
+/* Ab 0xC0 ist ein Zeichen so breit wie sein Grundbuchstabe: "Ü" wie "U". */
+const GRUNDZEICHEN =
+  "AAAAAA?CEEEEIIIIDNOOOOO+OUUUUYPo" +   // C0-DF
+  "aaaaaa?ceeeeiiiionooooo+ouuuuypy";    // E0-FF
+
+/* Alles, was sich so nicht herleiten laesst: [normal, fett]. */
+const SONDERBREITEN = {
+  0x80: [556, 556], 0x84: [333, 500], 0x85: [1000, 1000], 0x91: [222, 278],
+  0x92: [222, 278], 0x93: [333, 500], 0x94: [333, 500], 0x95: [350, 350],
+  0x96: [556, 556], 0x97: [1000, 1000], 0xa0: [278, 278], 0xab: [556, 556],
+  0xb0: [400, 400], 0xb7: [278, 278], 0xbb: [556, 556], 0xc6: [1000, 1000],
+  0xe6: [889, 889]
+};
+
+function byteBreite(b, fett) {
+  if (b >= 32 && b <= 126) return (fett ? BREIT_FETT : BREIT_NORMAL)[b - 32];
+  const sonder = SONDERBREITEN[b];
+  if (sonder) return sonder[fett ? 1 : 0];
+  if (b >= 0xc0) {
+    const grund = GRUNDZEICHEN.charCodeAt(b - 0xc0);
+    if (grund !== 63) return byteBreite(grund, fett);
+  }
+  return fett ? 611 : 556;
+}
+
+function textBreite(text, fett, groesse) {
+  const bytes = winAnsiBytes(text);
+  let summe = 0;
+  for (const b of bytes) summe += byteBreite(b, fett);
+  return (summe * groesse) / 1000;
+}
+
+/** Kuerzt Text mit Auslassungspunkten, wenn er nicht in die Spalte passt. */
+function textKuerzen(text, maxBreite, fett, groesse) {
+  if (textBreite(text, fett, groesse) <= maxBreite) return text;
+  let kurz = text;
+  while (kurz.length > 1 && textBreite(kurz + "…", fett, groesse) > maxBreite) {
+    kurz = kurz.slice(0, -1);
+  }
+  return kurz.replace(/[\s,;-]+$/, "") + "…";
+}
+
+/* --- Farben und Spalten des PDF --- */
+const P_GRAU = [0.42, 0.46, 0.52];
+const P_DUNKEL = [0.08, 0.09, 0.12];
+const P_BLAU = [0.11, 0.3, 0.84];
+const P_BLAU_BG = [0.937, 0.953, 0.996];
+const P_BRAUN = [0.58, 0.28, 0.02];
+const P_BRAUN_BG = [0.996, 0.961, 0.922];
+const P_LINIE = [0.86, 0.87, 0.89];
+
+const X_RUNDE = PDF.randL + 11;
+const X_WDH = PDF.randL + 128;          // rechte Kante der Wiederholungen
+const X_NAME = PDF.randL + 140;
+const X_ENDE = PDF.breite - PDF.randR;
+const NAME_BREITE = X_ENDE - 10 - X_NAME;
+
+const H_UEBUNG = 28, H_BURPEE = 24, ABSTAND = 3, RUNDEN_LUFT = 9;
+
+function datumDeutsch(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  try {
+    return d.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
+  } catch (e) {
+    return d.toISOString().slice(0, 10);
+  }
+}
+
+/** Baut die Zeichenbefehle - eine Liste je Seite. */
+function pdfSeitenBauen(plan) {
+  const e = plan.einst;
+  const seiten = [];
+  let befehle = null, y = 0;
+
+  function neueSeite(erste) {
+    befehle = [];
+    seiten.push(befehle);
+    y = PDF.hoehe - PDF.randO;
+
+    if (erste) {
+      y -= 26;
+      befehle.push({ art: "text", x: PDF.randL, y: y, text: "Workout", fett: true, groesse: 26, farbe: P_DUNKEL });
+      y -= 19;
+      befehle.push({ art: "text", x: PDF.randL, y: y, text: datumDeutsch(plan.erstellt), fett: false, groesse: 10.5, farbe: P_GRAU });
+      y -= 14;
+
+      const runden = rundenImPlan(plan);
+      const teileZeile = [runden + (runden === 1 ? " Runde" : " Runden"),
+        e.wdhUebung + " Wiederholungen je Übung"];
+      if (e.burpeesAn) teileZeile.push(e.wdhBurpee + " je Burpee");
+      const summen = zusammenfassungTexte(plan);
+      teileZeile.push(summen[summen.length - 1].join(" "));
+      befehle.push({
+        art: "text", x: PDF.randL, y: y,
+        text: textKuerzen(teileZeile.join("  ·  "), X_ENDE - PDF.randL, false, 10.5),
+        fett: false, groesse: 10.5, farbe: P_GRAU
+      });
+      y -= 16;
+    } else {
+      y -= 13;
+      befehle.push({ art: "text", x: PDF.randL, y: y, text: "Workout · Fortsetzung", fett: true, groesse: 13, farbe: P_DUNKEL });
+      y -= 12;
+    }
+
+    befehle.push({ art: "linie", x1: PDF.randL, y1: y, x2: X_ENDE, y2: y, farbe: P_LINIE, dicke: 0.8 });
+    y -= 18;
+  }
+
+  function zeileZeichen(block, hoehe, einzug) {
+    const fett = block.typ === "uebung";
+    befehle.push({
+      art: "rect", x: PDF.randL + einzug, y: y - hoehe, b: X_ENDE - PDF.randL - einzug,
+      h: hoehe, farbe: fett ? P_BLAU_BG : P_BRAUN_BG
+    });
+    const grundlinie = y - hoehe / 2 - (fett ? 4.3 : 4);
+    if (fett) {
+      befehle.push({
+        art: "text", x: X_RUNDE, y: grundlinie + 0.5,
+        text: "RUNDE " + block.runde, fett: true, groesse: 8, farbe: P_GRAU
+      });
+    }
+    befehle.push({
+      art: "text", x: X_WDH, y: grundlinie, rechts: true,
+      text: block.wdh + " ×", fett: fett, groesse: fett ? 13 : 11.5,
+      farbe: fett ? P_BLAU : P_BRAUN
+    });
+    befehle.push({
+      art: "text", x: X_NAME, y: grundlinie,
+      text: textKuerzen(block.name, NAME_BREITE, fett, fett ? 12.5 : 11.5),
+      fett: fett, groesse: fett ? 12.5 : 11.5,
+      farbe: fett ? P_DUNKEL : P_BRAUN
+    });
+    y -= hoehe;
+  }
+
+  // Bloecke zu Runden gruppieren, damit eine Runde nie zerrissen wird.
+  const runden = [];
+  for (const block of plan.bloecke) {
+    if (block.typ === "uebung") runden.push({ uebung: block, burpee: null });
+    else if (runden.length) runden[runden.length - 1].burpee = block;
+  }
+
+  neueSeite(true);
+  for (const runde of runden) {
+    const brauchtHoehe = H_UEBUNG + (runde.burpee ? ABSTAND + H_BURPEE : 0);
+    if (y - brauchtHoehe < PDF.randU + 16) neueSeite(false);
+    zeileZeichen(runde.uebung, H_UEBUNG, 0);
+    if (runde.burpee) {
+      y -= ABSTAND;
+      zeileZeichen(runde.burpee, H_BURPEE, 26);
+    }
+    y -= RUNDEN_LUFT;
+  }
+
+  // Fusszeilen erst jetzt, weil die Gesamtzahl der Seiten vorher nicht feststeht.
+  seiten.forEach((seite, i) => {
+    const text = "Seite " + (i + 1) + " von " + seiten.length;
+    seite.push({
+      art: "text", x: (PDF.breite + textBreite(text, false, 8.5)) / 2, y: PDF.randU - 14,
+      rechts: true, text: text, fett: false, groesse: 8.5, farbe: P_GRAU
+    });
+  });
+
+  return seiten;
+}
+
+/* --- Zeichenbefehle zu PDF-Anweisungen --- */
+
+function z(n) {
+  return (Math.round(n * 100) / 100).toString();
+}
+function farbe(f) {
+  return f[0] + " " + f[1] + " " + f[2];
+}
+function pdfTextEscape(s) {
+  return String(s).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+}
+
+function befehleZuStrom(befehle) {
+  const zeilen = [];
+  for (const b of befehle) {
+    if (b.art === "rect") {
+      zeilen.push(farbe(b.farbe) + " rg " + z(b.x) + " " + z(b.y) + " " + z(b.b) + " " + z(b.h) + " re f");
+    } else if (b.art === "linie") {
+      zeilen.push(farbe(b.farbe) + " RG " + z(b.dicke) + " w " + z(b.x1) + " " + z(b.y1) +
+        " m " + z(b.x2) + " " + z(b.y2) + " l S");
+    } else if (b.art === "text") {
+      if (b.text === "") continue;
+      const x = b.rechts ? b.x - textBreite(b.text, b.fett, b.groesse) : b.x;
+      zeilen.push("BT " + farbe(b.farbe) + " rg /" + (b.fett ? "F2" : "F1") + " " + z(b.groesse) +
+        " Tf 1 0 0 1 " + z(x) + " " + z(b.y) + " Tm (" + pdfTextEscape(b.text) + ") Tj ET");
+    }
+  }
+  return zeilen.join("\n");
+}
+
+function bytesVerbinden(liste) {
+  let laenge = 0;
+  for (const t of liste) laenge += t.length;
+  const alles = new Uint8Array(laenge);
+  let pos = 0;
+  for (const t of liste) { alles.set(t, pos); pos += t.length; }
+  return alles;
+}
+
+function pdfErzeugen(plan) {
+  const seiten = pdfSeitenBauen(plan);
+  const anzahl = seiten.length;
+  const N_KATALOG = 1, N_SEITEN = 2, N_F1 = 3, N_F2 = 4;
+  const seiteNr = (i) => 5 + i * 2;
+  const stromNr = (i) => 6 + i * 2;
+  const hoechste = 4 + anzahl * 2;
+
+  const objekte = new Map();
+  objekte.set(N_KATALOG, winAnsiBytes("<< /Type /Catalog /Pages " + N_SEITEN + " 0 R >>"));
+  objekte.set(N_SEITEN, winAnsiBytes("<< /Type /Pages /Count " + anzahl + " /Kids [" +
+    seiten.map((_, i) => seiteNr(i) + " 0 R").join(" ") + "] >>"));
+  objekte.set(N_F1, winAnsiBytes("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"));
+  objekte.set(N_F2, winAnsiBytes("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>"));
+
+  seiten.forEach((seite, i) => {
+    objekte.set(seiteNr(i), winAnsiBytes(
+      "<< /Type /Page /Parent " + N_SEITEN + " 0 R /MediaBox [0 0 " +
+      z(PDF.breite) + " " + z(PDF.hoehe) + "] /Resources << /Font << /F1 " +
+      N_F1 + " 0 R /F2 " + N_F2 + " 0 R >> >> /Contents " + stromNr(i) + " 0 R >>"));
+    const strom = winAnsiBytes(befehleZuStrom(seite));
+    objekte.set(stromNr(i), bytesVerbinden([
+      winAnsiBytes("<< /Length " + strom.length + " >>\nstream\n"),
+      strom,
+      winAnsiBytes("\nendstream")
+    ]));
+  });
+
+  const teile = [];
+  let laenge = 0;
+  const schreibe = (bytes) => { teile.push(bytes); laenge += bytes.length; };
+
+  // "%PDF-1.4" und eine Zeile mit hohen Bytes - daran erkennen Programme,
+  // dass die Datei binaer behandelt werden muss.
+  schreibe(Uint8Array.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a,
+    0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a]));
+
+  const versatz = [];
+  for (let nr = 1; nr <= hoechste; nr++) {
+    versatz[nr] = laenge;
+    schreibe(winAnsiBytes(nr + " 0 obj\n"));
+    schreibe(objekte.get(nr));
+    schreibe(winAnsiBytes("\nendobj\n"));
+  }
+
+  const xrefStart = laenge;
+  let xref = "xref\n0 " + (hoechste + 1) + "\n0000000000 65535 f \n";
+  for (let nr = 1; nr <= hoechste; nr++) {
+    xref += String(versatz[nr]).padStart(10, "0") + " 00000 n \n";
+  }
+  xref += "trailer\n<< /Size " + (hoechste + 1) + " /Root " + N_KATALOG +
+    " 0 R >>\nstartxref\n" + xrefStart + "\n%%EOF\n";
+  schreibe(winAnsiBytes(xref));
+
+  return bytesVerbinden(teile);
+}
+
+function pdfHerunterladen() {
+  const plan = zustand.plan;
+  if (!plan) return;
+  const bytes = pdfErzeugen(plan);
+  const d = new Date(plan.erstellt);
+  const tag = isNaN(d) ? new Date() : d;
+  const stempel = tag.getFullYear() + "-" +
+    String(tag.getMonth() + 1).padStart(2, "0") + "-" +
+    String(tag.getDate()).padStart(2, "0");
+
+  const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "Workout_" + stempel + ".pdf";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 20000);
+}
+
+/* ===== 9. Oberflaeche ==================================================== */
+
+function ablageZeigen(art) {
+  const namen = zustand.listen[art];
+  const ablage = $("#ablage-" + art);
+  const zahl = $("#zahl-" + art);
+  const chips = $("#chips-" + art);
+
+  ablage.classList.toggle("gefuellt", namen.length > 0);
+  $('[data-leeren="' + art + '"]').hidden = namen.length === 0;
+
+  zahl.textContent = "";
+  if (!namen.length) {
+    zahl.textContent = "Noch keine Liste geladen";
+  } else {
+    const b = document.createElement("b");
+    b.textContent = namen.length + (namen.length === 1 ? " Eintrag" : " Einträge");
+    zahl.append(b, " geladen");
+  }
+
+  chips.textContent = "";
+  for (const name of namen) {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    chip.textContent = name;
+    chips.appendChild(chip);
+  }
+}
+
+/* Jede Liste bringt eigene Meldungen mit. Sie werden getrennt gehalten, damit
+   das Laden der zweiten Liste den Hinweis zur ersten nicht wegwischt. */
+const dateiMeldungen = { uebung: [], burpee: [] };
+
+function dateiMeldungenZeigen() {
+  meldungZeigen("#datei-meldung", dateiMeldungen.uebung.concat(dateiMeldungen.burpee));
+}
+
+function listeSetzen(art, namen, hinweise, stillBeiLeer) {
+  zustand.listen[art] = namen;
+  const meldungen = (hinweise || []).map((t) => ({ art: "warn", text: ART_NAME[art] + ": " + t }));
+
+  // Seitenübungen, deren Gegenseite in der Liste fehlt
+  const allein = einheitenBauen(namen).ohneGegenseite;
+  if (allein.length) {
+    const gezeigt = allein.slice(0, 3).map((n) => "„" + n + "“").join(", ");
+    meldungen.push({
+      art: "warn",
+      text: ART_NAME[art] + ": " + gezeigt + (allein.length > 3 ? " und " + (allein.length - 3) + " weitere" : "") +
+        (allein.length === 1 ? " hat" : " haben") +
+        " keine Gegenseite in der Liste und " + (allein.length === 1 ? "wird" : "werden") +
+        " einzeln gezogen."
+    });
+  }
+
+  if (!namen.length && !stillBeiLeer) {
+    meldungen.unshift({ art: "fehler", text: ART_NAME[art] + ": In der Datei war kein Eintrag zu finden." });
+  }
+  dateiMeldungen[art] = meldungen;
+  dateiMeldungenZeigen();
+  ablageZeigen(art);
+  speichern();
+}
+
+async function dateiVerarbeiten(art, datei) {
+  if (!datei) return;
+  try {
+    const { namen, hinweise } = await listeAusDatei(datei);
+    listeSetzen(art, namen, hinweise);
+  } catch (fehler) {
+    const text = fehler instanceof AppFehler
+      ? fehler.message
+      : "Die Datei konnte nicht gelesen werden. Bitte als .xlsx oder CSV speichern und erneut versuchen.";
+    dateiMeldungen[art] = [{ art: "fehler", text: ART_NAME[art] + ": " + text }];
+    dateiMeldungenZeigen();
+    if (!(fehler instanceof AppFehler)) console.error(fehler);
+  }
+}
+
+function einstellungenAnzeigen() {
+  const e = zustand.einst;
+  $("#e-runden").value = e.runden;
+  $("#e-wdh-uebung").value = e.wdhUebung;
+  $("#e-wdh-burpee").value = e.wdhBurpee;
+  $("#e-burpees").checked = e.burpeesAn;
+  $("#e-keine-doppelt").checked = e.keineDoppelt;
+  $("#e-wdh-burpee").disabled = !e.burpeesAn;
+}
+
+function einstellungenLesen() {
+  const e = zustand.einst;
+  const zahl = (feld, standard, min, max) => {
+    const wert = Number($(feld).value);
+    return Number.isFinite(wert) && wert > 0 ? begrenzen(wert, min, max) : standard;
+  };
+  e.runden = zahl("#e-runden", 5, 1, 50);
+  e.wdhUebung = zahl("#e-wdh-uebung", 20, 1, 999);
+  e.wdhBurpee = zahl("#e-wdh-burpee", 10, 1, 999);
+  e.burpeesAn = $("#e-burpees").checked;
+  e.keineDoppelt = $("#e-keine-doppelt").checked;
+  einstellungenAnzeigen();
+  speichern();
+}
+
+function wuerfeln() {
+  einstellungenLesen();
+  const fehlen = [];
+  if (!zustand.listen.uebung.length) fehlen.push("eine Übungsliste");
+  if (zustand.einst.burpeesAn && !zustand.listen.burpee.length) fehlen.push("eine Liste mit Burpee-Varianten");
+
+  if (fehlen.length) {
+    meldungZeigen("#einstell-meldung", [{
+      art: "fehler",
+      text: "Dafür fehlt noch " + fehlen.join(" und ") +
+        ". Lade sie in Schritt 1 hoch - oder nimm die Beispielliste zum Ausprobieren."
+    }]);
+    return;
+  }
+  meldungZeigen("#einstell-meldung", []);
+  zustand.plan = planBauen();
+  speichern();
+  planZeigen();
+  $("#plan-karte").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function ereignisseVerbinden() {
+  for (const art of ["uebung", "burpee"]) {
+    const eingabe = $("#datei-" + art);
+    const ablage = $("#ablage-" + art);
+
+    $('[data-waehlen="' + art + '"]').addEventListener("click", () => eingabe.click());
+    eingabe.addEventListener("change", () => {
+      dateiVerarbeiten(art, eingabe.files[0]);
+      eingabe.value = "";          // dieselbe Datei soll erneut gehen
+    });
+    $('[data-beispiel="' + art + '"]').addEventListener("click", () => {
+      listeSetzen(art, BEISPIEL[art].slice(), []);
+    });
+    $('[data-leeren="' + art + '"]').addEventListener("click", () => {
+      listeSetzen(art, [], [], true);
+    });
+
+    ablage.addEventListener("dragover", (ev) => {
+      ev.preventDefault();
+      ablage.classList.add("drueber");
+    });
+    ablage.addEventListener("dragleave", () => ablage.classList.remove("drueber"));
+    ablage.addEventListener("drop", (ev) => {
+      ev.preventDefault();
+      ablage.classList.remove("drueber");
+      dateiVerarbeiten(art, ev.dataTransfer.files[0]);
+    });
+  }
+
+  for (const feld of ["#e-runden", "#e-wdh-uebung", "#e-wdh-burpee"]) {
+    $(feld).addEventListener("change", einstellungenLesen);
+  }
+  $("#e-burpees").addEventListener("change", einstellungenLesen);
+  $("#e-keine-doppelt").addEventListener("change", einstellungenLesen);
+
+  $("#wuerfeln").addEventListener("click", wuerfeln);
+  $("#neu-wuerfeln").addEventListener("click", wuerfeln);
+  $("#drucken").addEventListener("click", () => window.print());
+  $("#pdf").addEventListener("click", () => {
+    try {
+      pdfHerunterladen();
+    } catch (fehler) {
+      console.error(fehler);
+      meldungZeigen("#plan-meldung", planHinweise(zustand.plan).concat([{
+        art: "fehler", text: "Das PDF konnte nicht erzeugt werden. Der Knopf \"Drucken\" bietet den gleichen Plan an."
+      }]));
+    }
+  });
+
+  // Das Fenster soll beim Tippen im Zahlenfeld nicht scrollen.
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter" && ev.target.tagName === "INPUT" && ev.target.type === "number") {
+      ev.preventDefault();
+      wuerfeln();
+    }
+  });
+}
+
+function starten() {
+  speicherGeht = speicherPruefen();
+  if (!speicherGeht) $("#speicher-warnung").hidden = false;
+  geladenesHolen();
+  einstellungenAnzeigen();
+  ablageZeigen("uebung");
+  ablageZeigen("burpee");
+  planZeigen();
+  ereignisseVerbinden();
+}
+
+starten();
+
+/* ===== 10. Handy: App auf dem Startbildschirm ============================
+   Nur ueber https sinnvoll. Beim Doppelklick am PC (file://) passiert hier
+   nichts - keine Registrierung, keine Fehlermeldung in der Konsole. */
+const sichereHerkunft = location.protocol === "https:" ||
+  location.hostname === "localhost" || location.hostname === "127.0.0.1";
+if ("serviceWorker" in navigator && sichereHerkunft) {
+  addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
